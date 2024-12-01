@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AlbumStore.Application.Models;
 
 namespace AlbumStore.Application.QueryProjections
 {
@@ -15,6 +16,7 @@ namespace AlbumStore.Application.QueryProjections
         public string ArtistsName { get; set; }
         public string Image { get; set; }
         public bool IsFavorited { get; set; }
+        public ImageDto BaseImage { get; set; }
 
     }
 }

@@ -19,12 +19,14 @@ namespace AlbumStore.Infrastructure.WebSockets
             {
                 Console.WriteLine("--------------------------------------------------------------");
                 var userId = Context.Features.Get<IHttpContextFeature>()?.HttpContext?.Request.Query["userId"].ToString();
+                
                 if (string.IsNullOrEmpty(userId))
                 {
                     Console.WriteLine($"Connection failed: Missing userId for ConnectionId: {Context.ConnectionId}");
                     Context.Abort();
                     return Task.CompletedTask;
                 }
+
 
                 var connectionId = Context.ConnectionId;
                 Console.WriteLine($"[{DateTime.UtcNow}] User Connected: {userId}, ConnectionId: {connectionId}");

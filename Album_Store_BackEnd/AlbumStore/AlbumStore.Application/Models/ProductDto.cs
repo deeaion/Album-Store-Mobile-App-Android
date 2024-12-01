@@ -1,4 +1,5 @@
-﻿using AlbumStore.Domain.Entities;
+﻿using AlbumStore.Application.Models;
+using AlbumStore.Domain.Entities;
 
 namespace AlbumStore.Application.Filtering
 {
@@ -15,6 +16,7 @@ namespace AlbumStore.Application.Filtering
         public int NumberOfStock { get; set; }
         public Guid? BandId { get; set; }
         public string? BaseImageUrl { get; set; }
+        public ImageDto? BaseImage { get; set; }
         public string? DetailsImageUrl { get; set; }
         public string? BandName { get; set; }
         public List<Guid>? ArtistIds { get; set; }

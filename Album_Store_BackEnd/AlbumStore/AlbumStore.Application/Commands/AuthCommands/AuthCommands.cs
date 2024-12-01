@@ -23,7 +23,7 @@ public class UserLoginCommand : BaseRequest<CommandResponse<UserLoginCommandResp
 {
     public string Email { get; set; }
     public string Password { get; set; }
-    public bool IsGuestLogin { get; set; }
+    public bool IsGuestLogin { get; set; } = false;
 
 }
 

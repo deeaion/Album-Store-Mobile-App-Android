@@ -47,7 +47,7 @@ namespace AlbumStore.Application.Commands.ProductCommands
             //get the user who modified the product
             String user = (await _currentUserService.GetCurrentUser()).UserId;
             product.ModifiedBy = user;
-            product.ModifiedDate = DateTime.Now;
+            product.ModifiedDate = DateTime.UtcNow;
             await _repository.SaveChangesAsync(cancellationToken);
             return CommandResponse.Ok();
         }

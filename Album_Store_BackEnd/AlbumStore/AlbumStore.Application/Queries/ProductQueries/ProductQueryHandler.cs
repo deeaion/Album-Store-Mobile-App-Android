@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AlbumStore.Application.Common;
 using AlbumStore.Application.Filtering;
+using AlbumStore.Application.Models;
 using AlbumStore.Application.QueryProjections;
 using AlbumStore.Application.QueryProjections.Mappers;
 using AlbumStore.Common.Helpful;
@@ -36,7 +37,29 @@ namespace AlbumStore.Application.Queries.ProductQueries
                 request.Skip,
                 request.Take);
             List<ProductOverview> productOverviewsList = await productOverviews.ToListAsync(cancellationToken);
-     
+
+            //pentru fiecare produs vad daca ii gasesc imahinea sa o iau si sa o transform in Image si sa o trimit
+            foreach (var productOverview in productOverviewsList)
+            {
+                string image = productOverview.Image;
+                if (image != null)
+                {
+                    // search for the file
+                    string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", image);
+                    if (File.Exists(path))
+                    {
+                        byte[] imageArray = System.IO.File.ReadAllBytes(path);
+                        string base64ImageRepresentation = Convert.ToBase64String(imageArray);
+                        productOverview.BaseImage = new ImageDto()
+                        {
+                           ImageBase64 = base64ImageRepresentation,
+                            ContentType = "image/jpeg", // Assuming the content type is jpeg
+                            FileName = image
+
+                        };
+                    }
+                }
+            }
             return new CollectionResponse<ProductOverview>(productOverviewsList, totalNumberOfItems);
         }
 
@@ -44,7 +67,7 @@ namespace AlbumStore.Application.Queries.ProductQueries
         {
             String currentUserId = (await service.GetCurrentUser()).UserId;
             
-
+            
             ProductDto? productDto =await productRepository.Query(p=>p.Id == request.Id)
                 .Select(p => new ProductDto
                 {
@@ -71,8 +94,27 @@ namespace AlbumStore.Application.Queries.ProductQueries
                         ProductId = pv.ProductId
                     }).ToList(),
                     IsFavorited = p.UsersWhoLikeThisProduct.Any(u => u.Id == currentUserId)
-
+                    
                 }).FirstOrDefaultAsync(cancellationToken);
+            // pentru fiecare produs vad daca ii gasesc imahinea sa o iau si sa o transform in Image si sa o trimit
+           string image = productDto.BaseImageUrl;
+            if (image != null)
+            {
+                // search for the file
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", image);
+                if (File.Exists(path))
+                {
+                    byte[] imageArray = System.IO.File.ReadAllBytes(path);
+                    string base64ImageRepresentation = Convert.ToBase64String(imageArray);
+                    productDto.BaseImage = new ImageDto()
+                    {
+                        ContentType = "image/jpeg", // Assuming the content type is jpeg
+                        FileName = image,
+                        ImageBase64 = base64ImageRepresentation
+                    };
+                }
+            }
+
             return productDto;
         }
 

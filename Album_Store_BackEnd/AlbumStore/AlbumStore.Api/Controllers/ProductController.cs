@@ -47,7 +47,7 @@ public class ProductController : BaseController
 
             // Send the notification message to all connected clients via SignalR
             await _hubContext.Clients.All.SendAsync("ReceiveMessage", notificationMessage);
-
+            Console.WriteLine("Product added notification sent to all clients");
             return Ok(commandResponse);
         }
 

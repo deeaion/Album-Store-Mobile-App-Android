@@ -33,11 +33,15 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173").WithOrigins("http://localhost:5174")
+            policy.AllowAnyOrigin()
                 .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials(); // If using credentials
+                .AllowAnyMethod();
+
         });
+});
+builder.WebHost.UseKestrel(options =>
+{
+    options.ListenAnyIP(5275); // Listen on all network interfaces
 });
 
 //Configure entity framework
@@ -194,7 +198,7 @@ else
 
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors(MyAllowSpecificOrigins);
 
