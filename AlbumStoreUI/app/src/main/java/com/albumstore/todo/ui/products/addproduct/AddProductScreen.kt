@@ -91,7 +91,7 @@ fun AddProductScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(if (productId == null) "Add Product" else "Update Product") })
+            TopAppBar(title = { Text(if (productId == null && productId!="new") "Add Product" else "Update Product") })
         },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) // Attach SnackbarHost for error messages
@@ -205,7 +205,7 @@ fun AddProductScreen(
                         Button(
                             onClick = {
                                 val productDetail = ProductDetail(
-                                    id = productId, // Pass `productId` to update if available
+                                    id = productId,
                                     name = name,
                                     description = description,
                                     genre = genre,
@@ -213,7 +213,7 @@ fun AddProductScreen(
                                     price = price.toDoubleOrNull() ?: 0.0,
                                     bandId = selectedBand?.id ?: ""
                                 )
-
+                                Log.d("AddProductScreen", "Saving product: $productDetail")
                                 if (name.isBlank() || description.isBlank() || genre.isBlank() || selectedBand == null) {
                                     scope.launch {
                                         snackbarHostState.showSnackbar("All fields are required.")

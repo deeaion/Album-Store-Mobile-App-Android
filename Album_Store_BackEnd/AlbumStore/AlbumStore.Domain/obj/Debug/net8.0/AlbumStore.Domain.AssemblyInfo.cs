@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AlbumStore.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e796da3c1ac93521c7faf2cb953a75bebc34f6c8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a10d9fb04126e3fab55f23d722fefa6c4d2f99a4")]
 [assembly: System.Reflection.AssemblyProductAttribute("AlbumStore.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AlbumStore.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

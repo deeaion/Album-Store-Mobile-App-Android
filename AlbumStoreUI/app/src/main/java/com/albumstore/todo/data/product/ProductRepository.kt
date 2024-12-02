@@ -44,7 +44,8 @@ class ProductRepository(
     }
 
     suspend fun saveProduct(productDetail: ProductDetail) {
-        val updatedProduct = if (productDetail.id?.isNotBlank() == true) {
+        val updatedProduct = if (productDetail.id?.isNotBlank() == true
+            && productDetail.id!="new") {
             productDetail.id.let {
                 productService.updateProduct(
                     getBearerToken(),
