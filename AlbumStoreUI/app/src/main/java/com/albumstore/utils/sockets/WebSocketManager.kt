@@ -1,4 +1,4 @@
-package com.albumstore.utils
+package com.albumstore.utils.sockets
 
 import android.util.Log
 import com.albumstore.todo.data.remote.ProductEvent
@@ -11,6 +11,7 @@ import io.reactivex.rxjava3.core.Single
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
+import okhttp3.internal.wait
 
 class WebSocketManager(
     private val url: String,
@@ -18,11 +19,11 @@ class WebSocketManager(
     private var userId: String
 ) {
 
-    private var hubConnection: HubConnection? = null
+    var hubConnection: HubConnection? = null
     private val eventChannel = Channel<ProductEvent>(Channel.BUFFERED)
     val socketEventsFlow = eventChannel.receiveAsFlow()
 
-    private val maxReconnectAttempts = 10
+    private val maxReconnectAttempts = 2
     private var reconnectAttempts = 0
     private val reconnectDelay = 6000L // 5 seconds
 
@@ -52,6 +53,7 @@ class WebSocketManager(
 
         hubConnection?.onClosed {
             Log.d(TAG, "WebSocket connection closed.")
+            reconnectAttempts = 0
             attemptReconnect(coroutineScope)
         }
 
@@ -69,7 +71,12 @@ class WebSocketManager(
 
     private fun attemptReconnect(coroutineScope: CoroutineScope) {
         if (reconnectAttempts >= maxReconnectAttempts) {
-            Log.w(TAG, "Max reconnect attempts reached. Giving up.")
+            Log.w(TAG, "Max reconnect attempts reached. Waiting before retrying...")
+            coroutineScope.launch {
+                delay(60000) // Wait 60 seconds before resetting attempts
+                reconnectAttempts = 0
+                startConnection(coroutineScope, userId)
+            }
             return
         }
 
@@ -77,12 +84,21 @@ class WebSocketManager(
         coroutineScope.launch {
             delay(reconnectDelay)
             Log.d(TAG, "Reconnecting... (Attempt $reconnectAttempts)")
-            startConnection(
-                coroutineScope,
-                userId
-            )
+            startConnection(coroutineScope, userId)
         }
     }
+    fun monitorConnection(coroutineScope: CoroutineScope) {
+        coroutineScope.launch {
+            while (true) {
+                delay(10000) // Check every 10 seconds
+                if (hubConnection?.connectionState != HubConnectionState.CONNECTED) {
+                    Log.d(TAG, "Connection lost. Retrying...")
+                    startConnection(coroutineScope, userId)
+                }
+            }
+        }
+    }
+
 
     private fun parseEvent(json: String): ProductEvent {
         Log.d(TAG, "Parsing WebSocket message: $json")

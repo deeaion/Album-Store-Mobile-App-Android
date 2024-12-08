@@ -17,13 +17,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.albumstore.todo.data.band.Band
 import com.albumstore.todo.data.product.ProductDetail
 import com.albumstore.todo.data.product.ProductRepository
-import com.albumstore.todo.data.remote.ProductWsClient
 import com.albumstore.todo.ui.product.ProductViewModel
 import kotlinx.coroutines.launch
 import com.albumstore.todo.data.band.BandRepository
-import com.albumstore.todo.data.product.Product
+import com.albumstore.todo.data.tasks.TaskRepository
 import com.albumstore.todo.ui.band.BandViewModel
-import com.albumstore.utils.WebSocketManager
+import com.albumstore.utils.sockets.WebSocketManager
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
@@ -33,11 +32,12 @@ fun AddProductScreen(
     productRepository: ProductRepository,
     webSocketManager: WebSocketManager,
     bandRepository: BandRepository,
+    taskRepository: TaskRepository,
     productId: String? = null, // Accept an optional productId
     onProductSaved: () -> Unit,
     onCancel: () -> Unit
 ) {
-    val productViewModel: ProductViewModel = viewModel(factory = ProductViewModel.Factory(productRepository, webSocketManager))
+    val productViewModel: ProductViewModel = viewModel(factory = ProductViewModel.Factory(productRepository, webSocketManager, taskRepository ))
     val bandViewModel: BandViewModel = viewModel(factory = BandViewModel.Factory(bandRepository))
     val _updateEventFlow = MutableSharedFlow<ProductDetail>() // SharedFlow for update events
     val updateEventFlow = _updateEventFlow.asSharedFlow() // Expose as read-only

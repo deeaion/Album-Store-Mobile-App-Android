@@ -3,6 +3,9 @@ package com.albumstore
 import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.albumstore.auth.data.remote.AuthDataSource
 import com.albumstore.auth.data.remote.AuthRepository
 import com.albumstore.core.TAG
@@ -13,11 +16,18 @@ import com.albumstore.todo.data.product.ProductRepository
 import com.albumstore.todo.data.remote.ProductService
 import com.albumstore.todo.data.remote.ProductWsClient
 import com.albumstore.todo.data.remote.band.BandService
-import com.albumstore.utils.WebSocketManager
+import com.albumstore.todo.data.tasks.TaskRepository
+import com.albumstore.utils.conectivitymanager.ConnectivityManagerNetworkMonitor
+import com.albumstore.utils.sockets.WebSocketManager
+import com.albumstore.utils.workermanager.ProductSyncWorker
+import com.microsoft.signalr.HubConnectionState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 val Context.userPreferencesDataStore by preferencesDataStore(
     name = "user_preferences"
@@ -26,6 +36,8 @@ val Context.userPreferencesDataStore by preferencesDataStore(
 class AppContainer(val context: Context) {
     init {
         Log.d(TAG, "AppContainer initialized")
+        scheduleProductReminderWork(context)
+
     }
 
     // Retrofit service for product-related API calls
@@ -43,6 +55,9 @@ class AppContainer(val context: Context) {
 
         )
     }
+    //conectivity manager
+    val connectivityManager = ConnectivityManagerNetworkMonitor(context)
+
 
     // Lazy initialization of the database instance
     private val database: MyAppDatabase by lazy { MyAppDatabase.getDatabase(context) }
@@ -69,21 +84,56 @@ class AppContainer(val context: Context) {
         UserPreferencesRepository(context.userPreferencesDataStore)
     }
 
+    val taskRepository: TaskRepository by lazy {
+        TaskRepository(context,database.taskDao(), productService)
+    }
+    fun scheduleProductReminderWork(context: Context) {
+        val workRequest = PeriodicWorkRequestBuilder<ProductSyncWorker>(
+            3, TimeUnit.MINUTES
+        ).build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            "ProductSyncWorker",
+            ExistingPeriodicWorkPolicy.REPLACE,
+            workRequest
+        )
+    }
+
     // Manage WebSocket lifecycle
     fun initializeWebSocket() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                webSocketManager.startConnection(this,userPreferencesRepository.userPreferencesStream.first().userId)
+                val userId = userPreferencesRepository.userPreferencesStream.first().userId
+                webSocketManager.startConnection(this, userId)
+                monitorWebSocketConnection() // Start monitoring the WebSocket connection
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize WebSocket", e)
             }
         }
     }
+    private var monitoringJob: Job? = null
+    fun monitorWebSocketConnection(): Job {
+        return CoroutineScope(Dispatchers.IO).launch {
+            while (true) {
+                try {
+                    if (webSocketManager.hubConnection?.connectionState != HubConnectionState.CONNECTED) {
+                        Log.d(TAG, "WebSocket disconnected. Attempting to reconnect...")
+                        webSocketManager.startConnection(this, userPreferencesRepository.userPreferencesStream.first().userId)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to monitor WebSocket connection", e)
+                }
+                delay(10000) // Check every 10 seconds
+            }
+        }
+    }
+
 
     fun closeWebSocket() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 webSocketManager.stopConnection()
+                monitoringJob?.cancel() // Cancel the monitoring job
                 Log.d(TAG, "WebSocket closed from AppContainer")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to close WebSocket", e)

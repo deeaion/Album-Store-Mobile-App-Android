@@ -42,18 +42,19 @@ interface ProductService {
     )
 
     // Add product to favorites
-    @POST("/api/product/favorite")
+    @POST("/api/product/Favorite")
     suspend fun addProductToFavorites(
         @Header("Authorization") authorization: String,
         @Body favoriteRequest: FavoriteRequest
     )
 
     // Remove product from favorites
-    @DELETE("/api/product/favorite")
+    @DELETE("/api/product/Favorite")
     suspend fun removeProductFromFavorites(
         @Header("Authorization") authorization: String,
-        @Body favoriteRequest: FavoriteRequest
+        @Query("productId") productId: String
     )
+
 }
 
 // Data class for request body in favorite actions

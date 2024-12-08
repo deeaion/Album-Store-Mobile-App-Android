@@ -14,8 +14,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import com.albumstore.todo.data.remote.ProductEvent
 import com.albumstore.todo.data.remote.ProductRequest
 import com.albumstore.todo.data.remote.toQueryMap
-import com.albumstore.utils.Converters
-import com.google.android.gms.nearby.connection.Payload
+import com.squareup.moshi.Moshi
 
 class ProductRepository(
     private val productService: ProductService,
@@ -77,7 +76,7 @@ class ProductRepository(
     }
 
     suspend fun removeProductFromFavorites(productId: String) {
-        productService.removeProductFromFavorites(getBearerToken(), FavoriteRequest(productId))
+        productService.removeProductFromFavorites(getBearerToken(),productId)
         updateFavoriteStatusLocally(productId, isFavorited = false)
     }
 
@@ -163,4 +162,10 @@ class ProductRepository(
             Log.e("ProductRepository", "Failed to refresh product list", e)
         }
     }
+    private fun serializeProduct(product: ProductDetail): String {
+        val moshi = Moshi.Builder().build()
+        val adapter = moshi.adapter(ProductDetail::class.java)
+        return adapter.toJson(product)
+    }
+
 }

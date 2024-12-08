@@ -1,17 +1,19 @@
 package com.albumstore.todo.ui.products
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.albumstore.core.data.remote.UserPreferencesRepository
 import com.albumstore.todo.data.product.Product
-import com.albumstore.todo.data.product.ProductDetail
 import com.albumstore.todo.data.product.ProductRepository
 import com.albumstore.todo.data.remote.GetAllProductsFilter
 import com.albumstore.todo.data.remote.ProductEvent
-import com.albumstore.todo.ui.product.ProductViewModel
-import com.albumstore.utils.WebSocketManager
+import com.albumstore.todo.data.tasks.PendingTask
+import com.albumstore.todo.data.tasks.TaskRepository
+import com.albumstore.utils.notifications.showSimpleNotification
+import com.albumstore.utils.sockets.WebSocketManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -34,11 +36,13 @@ data class ProductsUiState(
 class ProductsViewModel(
     private val productRepository: ProductRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val webSocketManager: WebSocketManager
+    private val webSocketManager: WebSocketManager,
+    private val taskRepository: TaskRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProductsUiState())
     val uiState: StateFlow<ProductsUiState> = _uiState
+    //context
 
     private var skip = 0
     private val take = 10
@@ -47,7 +51,7 @@ class ProductsViewModel(
         viewModelScope.launch {
             fetchUserRole()
             loadProducts(reset = true)
-            collectWebSocketEvents()
+            syncPendingTasks()
         }
     }
 
@@ -61,7 +65,7 @@ class ProductsViewModel(
         }
     }
 
-    private fun collectWebSocketEvents() {
+    fun collectWebSocketEvents() {
         viewModelScope.launch {
             webSocketManager.socketEventsFlow.collect { event ->
                 handleWebSocketEvent(event)
@@ -72,21 +76,33 @@ class ProductsViewModel(
 
 
 
+
     private fun handleWebSocketEvent(event: ProductEvent) {
         when (event.type) {
             "ProductAdded" -> {
                 Log.d("ProductsViewModel", "Product added via WebSocket: ${event.productName}")
-                showNotification("Product Added", "${event.productName} has been added.")
-                loadProducts(reset = true) // Refresh the list
+                _uiState.value = _uiState.value.copy(
+                    notification = Notification(
+                        title = "Product Added",
+                        message = "${event.productName} has been added."
+                    )
+                )
+                loadProducts(reset = true)
             }
             "ProductDeleted" -> {
                 Log.d("ProductsViewModel", "Product deleted via WebSocket: ${event.productName}")
-                showNotification("Product Removed", "${event.productName} has been removed.")
-                loadProducts(reset = true) // Refresh the list
+                _uiState.value = _uiState.value.copy(
+                    notification = Notification(
+                        title = "Product Removed",
+                        message = "${event.productName} has been removed."
+                    )
+                )
+                loadProducts(reset = true)
             }
             else -> Log.w("ProductsViewModel", "Unknown WebSocket event type: ${event.type}")
         }
     }
+
 
     private fun showNotification(title: String, message: String) {
         _uiState.value = _uiState.value.copy(notification = Notification(title, message))
@@ -125,35 +141,64 @@ class ProductsViewModel(
 
     fun toggleFavorite(productId: String) {
         viewModelScope.launch {
+            val updatedProducts = _uiState.value.products.map { product ->
+                if (product.id == productId) {
+                    val isFavorited = !product.isFavorited
+
+                    // Update the UI immediately
+                    product.copy(isFavorited = isFavorited)
+                } else product
+            }
+
+            // Update the UI state before making the network call
+            _uiState.value = _uiState.value.copy(products = updatedProducts)
+
             try {
-                val updatedProducts = _uiState.value.products.map { product ->
-                    if (product.id == productId) {
-                        val isFavorited = !product.isFavorited
-                        if (isFavorited) {
-                            productRepository.addProductToFavorites(productId)
-                        } else {
-                            productRepository.removeProductFromFavorites(productId)
-                        }
-                        product.copy(isFavorited = isFavorited)
-                    } else product
+                // Attempt network call
+                val isFavorited = updatedProducts.first { it.id == productId }.isFavorited
+
+                if (isFavorited) {
+                    productRepository.addProductToFavorites(productId)
+                } else {
+                    productRepository.removeProductFromFavorites(productId)
                 }
-                _uiState.value = _uiState.value.copy(products = updatedProducts)
+
             } catch (e: Exception) {
                 Log.e("ProductsViewModel", "Failed to toggle favorite", e)
+
+                // Save task for offline sync if network fails
+                taskRepository.addPendingTask(
+                    PendingTask(
+                        taskType = "TOGGLE_FAVORITE",
+                        productId = productId,
+                        isFavorited = updatedProducts.first { it.id == productId }.isFavorited
+                    )
+                )
             }
         }
     }
 
+    private fun syncPendingTasks() {
+        viewModelScope.launch {
+            try {
+                taskRepository.processPendingTasks()
+                Log.d("ProductsViewModel", "Pending tasks synced successfully.")
+            } catch (e: Exception) {
+                Log.e("ProductsViewModel", "Failed to sync pending tasks", e)
+            }
+        }
+    }
     companion object {
         fun Factory(
             productRepository: ProductRepository,
             userPreferencesRepository: UserPreferencesRepository,
-            webSocketManager: WebSocketManager
+            webSocketManager: WebSocketManager,
+            taskRepository: TaskRepository
         ) = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 if (modelClass.isAssignableFrom(ProductsViewModel::class.java)) {
                     @Suppress("UNCHECKED_CAST")
-                    return ProductsViewModel(productRepository, userPreferencesRepository, webSocketManager) as T
+                    return ProductsViewModel(productRepository, userPreferencesRepository, webSocketManager,taskRepository) as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class")
             }

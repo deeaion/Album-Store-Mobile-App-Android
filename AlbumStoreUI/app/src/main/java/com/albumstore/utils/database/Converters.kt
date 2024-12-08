@@ -1,4 +1,4 @@
-package com.albumstore.utils
+package com.albumstore.utils.database
 
 import androidx.room.TypeConverter
 import com.albumstore.todo.data.product.ImageDto

@@ -10,7 +10,9 @@ import com.albumstore.todo.data.product.ProductDetail
 import com.albumstore.todo.data.product.ProductRepository
 import com.albumstore.todo.data.remote.GetAllProductsFilter
 import com.albumstore.todo.data.remote.ProductEvent
-import com.albumstore.utils.WebSocketManager
+import com.albumstore.todo.data.tasks.PendingTask
+import com.albumstore.todo.data.tasks.TaskRepository
+import com.albumstore.utils.sockets.WebSocketManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -30,7 +32,8 @@ data class ProductUiState(
 
 class ProductViewModel(
     private val productRepository: ProductRepository,
-    private val webSocketManager: WebSocketManager
+    private val webSocketManager: WebSocketManager,
+    private val taskRepository: TaskRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProductUiState())
@@ -127,17 +130,21 @@ class ProductViewModel(
 
     fun saveProduct(productDetail: ProductDetail) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(saving = true)
             try {
                 productRepository.saveProduct(productDetail)
                 _uiState.value = _uiState.value.copy(saving = false)
                 Log.d(TAG, "Product saved successfully: $productDetail")
             } catch (e: Exception) {
-                val errorDetails = if (e is HttpException) {
-                    e.response()?.errorBody()?.string()
-                } else null
-                Log.e(TAG, "Failed to save product. Server response: $errorDetails", e)
-                _uiState.value = _uiState.value.copy(saving = false, savingError = parseError(e))
+                Log.e(TAG, "Failed to save product", e)
+
+                // Save task for offline sync
+                taskRepository.addPendingTask(
+                    PendingTask(
+                        taskType = "SAVE_PRODUCT",
+                        productData = productDetail.toJson()
+                    )
+                )
+                _uiState.value = _uiState.value.copy(savingError = "Failed to save product, will retry later.")
             }
         }
     }
@@ -153,12 +160,13 @@ class ProductViewModel(
     }
 
     companion object {
-        fun Factory(productRepository: ProductRepository, webSocketManager: WebSocketManager) =
+        fun Factory(productRepository: ProductRepository, webSocketManager: WebSocketManager,
+                    taskRepository: TaskRepository) =
             object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     if (modelClass.isAssignableFrom(ProductViewModel::class.java)) {
                         @Suppress("UNCHECKED_CAST")
-                        return ProductViewModel(productRepository, webSocketManager) as T
+                        return ProductViewModel(productRepository, webSocketManager,taskRepository) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class")
                 }

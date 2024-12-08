@@ -167,9 +167,9 @@ public class ProductController : BaseController
     [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(CommandResponse), (int)HttpStatusCode.OK)]
     [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-    public async Task<IActionResult> RemoveFavoriteProduct([FromBody] RemoveFavoriteProductCommand removeFavoriteProductCommand)
+    public async Task<IActionResult> RemoveFavoriteProduct([FromQuery] Guid productId)
     {
-        CommandResponse commandResponse = await Mediator.Send(removeFavoriteProductCommand, new CancellationToken());
+        CommandResponse commandResponse = await Mediator.Send(new RemoveFavoriteProductCommand(){ProductId = productId}, new CancellationToken());
         if (commandResponse.IsValid)
             return Ok(commandResponse);
 

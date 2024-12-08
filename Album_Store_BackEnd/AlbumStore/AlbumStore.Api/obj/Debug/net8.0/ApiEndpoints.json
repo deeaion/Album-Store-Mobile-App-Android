@@ -911,9 +911,9 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "removeFavoriteProductCommand",
-        "Type": "AlbumStore.Application.Commands.ProductCommands.RemoveFavoriteProductCommand",
-        "IsRequired": true
+        "Name": "productId",
+        "Type": "System.Guid",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": [

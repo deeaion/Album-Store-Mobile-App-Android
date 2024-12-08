@@ -11,15 +11,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.albumstore.core.data.remote.UserPreferencesRepository
 import com.albumstore.todo.data.product.ProductRepository
+import com.albumstore.todo.data.tasks.TaskRepository
 import com.albumstore.todo.ui.product.ProductListItem
-import com.albumstore.todo.ui.products.ProductsViewModel
-import com.albumstore.utils.WebSocketManager
+import com.albumstore.utils.conectivitymanager.ConnectivityManagerNetworkMonitor
+import com.albumstore.utils.notifications.showSimpleNotification
+import com.albumstore.utils.sockets.WebSocketManager
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,19 +29,24 @@ fun ProductsScreen(
     productRepository: ProductRepository,
     userPreferencesRepository: UserPreferencesRepository,
     webSocketManager: WebSocketManager,
+    taskRepository: TaskRepository,
     onProductClick: (String) -> Unit,
+    connectivityManager: ConnectivityManagerNetworkMonitor,
+
     onAddProductClick: () -> Unit
 ) {
     val productsViewModel: ProductsViewModel = viewModel(
-        factory = ProductsViewModel.Factory(productRepository, userPreferencesRepository, webSocketManager)
+        factory = ProductsViewModel.Factory(productRepository, userPreferencesRepository, webSocketManager,taskRepository,
+            )
     )
 
     val uiState by productsViewModel.uiState.collectAsState()
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-
+    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val isAdmin = uiState.userRole.split(",").any { it.trim().equals("Admin", ignoreCase = true) }
+    val isOnline by connectivityManager.isOnline.collectAsState(initial = true) // Observe network status
 
     // Pull-to-refresh state
     var refreshing by remember { mutableStateOf(false) }
@@ -52,6 +59,14 @@ fun ProductsScreen(
                     productsViewModel.loadProducts(reset = false)
                 }
             }
+    }
+    if (!isOnline) {
+        LaunchedEffect(Unit) {
+            snackbarHostState.showSnackbar(
+                message = "You are offline. Favorites will sync when you are back online.",
+                actionLabel = "OK"
+            )
+        }
     }
 
     // Reset refreshing when fetching completes
@@ -71,10 +86,44 @@ fun ProductsScreen(
             productsViewModel.clearNotification() // Clear notification after showing it
         }
     }
-
+    LaunchedEffect(Unit) {
+        productsViewModel.collectWebSocketEvents()
+    }
+    uiState.notification?.let { notification ->
+        LaunchedEffect(notification) {
+            showSimpleNotification(
+                context = context,
+                channelId = "product_channel",
+                notificationId = 1,
+                title = notification.title,
+                content = notification.message
+            )
+            productsViewModel.clearNotification()
+        }
+    }
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Products") })
+            TopAppBar(
+                title = {
+                    Column {
+                        Text("Products")
+                        if (!isOnline) {
+                            Text(
+                                text = "Offline",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                        else {
+                            Text(
+                                text = "Online",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            )
         },
         floatingActionButton = {
             if (isAdmin) {

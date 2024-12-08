@@ -33,7 +33,7 @@ fun MyAppNavHost() {
 
     val userPreferencesViewModel = viewModel<UserPreferencesViewModel>(factory = UserPreferencesViewModel.Factory)
     val userPreferencesUiState by userPreferencesViewModel.uiState.collectAsState(initial = UserPreferences())
-
+    val taskRepository = appContainer.taskRepository
     NavHost(navController = navController, startDestination = AUTH_ROUTE) {
         // Products list screen
         composable(PRODUCTS_ROUTE) {
@@ -42,7 +42,9 @@ fun MyAppNavHost() {
                 onAddProductClick = { navController.navigate("$ADD_PRODUCT_ROUTE/new") },
                 productRepository = productRepository,
                 userPreferencesRepository = userPreferencesRepository,
-                webSocketManager = appContainer.webSocketManager
+                webSocketManager = appContainer.webSocketManager,
+                taskRepository = taskRepository,
+                connectivityManager = appContainer.connectivityManager
             )
         }
 
@@ -57,6 +59,7 @@ fun MyAppNavHost() {
                 webSocketManager = appContainer.webSocketManager,
                 userPreferencesRepository = userPreferencesRepository,
                 onEditClick = { navController.navigate("$ADD_PRODUCT_ROUTE/$productId") },
+                taskRepository = taskRepository,
                 onBackClick = { navController.popBackStack(PRODUCTS_ROUTE, false) }
             )
         }
@@ -70,6 +73,7 @@ fun MyAppNavHost() {
                 productRepository = productRepository,
                 webSocketManager = appContainer.webSocketManager,
                 bandRepository = appContainer.bandRepository,
+                taskRepository = taskRepository,
                 productId = productId, // Null for adding, non-null for editing
                 onProductSaved = { navController.popBackStack(PRODUCTS_ROUTE, false) },
                 onCancel = { navController.popBackStack(PRODUCTS_ROUTE, false) }

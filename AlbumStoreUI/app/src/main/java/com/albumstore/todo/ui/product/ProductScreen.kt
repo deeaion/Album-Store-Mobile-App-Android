@@ -1,7 +1,5 @@
 package com.albumstore.todo.ui.product
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -10,17 +8,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.albumstore.R
 import com.albumstore.core.data.remote.UserPreferencesRepository
-import com.albumstore.todo.data.product.ProductDetail
 import com.albumstore.todo.data.product.ProductRepository
-import com.albumstore.todo.data.remote.ProductWsClient
-import com.albumstore.utils.WebSocketManager
+import com.albumstore.todo.data.tasks.TaskRepository
+import com.albumstore.utils.sockets.WebSocketManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,17 +21,24 @@ fun ProductScreen(
     productRepository: ProductRepository,
     webSocketManager: WebSocketManager,
     userPreferencesRepository: UserPreferencesRepository,
+    taskRepository: TaskRepository,
     onBackClick: () -> Unit,
     onEditClick: (String) -> Unit // Add a callback for editing
 ) {
     if (productId == null) {
-        // Handle missing productId case (e.g., for new product)
+        // Show error message if product ID is not provided
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Product not found.")
+        }
         return
     }
 
     // Create ViewModel instance
     val productViewModel: ProductViewModel = viewModel(
-        factory = ProductViewModel.Factory(productRepository, webSocketManager)
+        factory = ProductViewModel.Factory(productRepository, webSocketManager,taskRepository)
     )
 
     // Collect UI state

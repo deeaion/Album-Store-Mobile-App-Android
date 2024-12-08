@@ -86,6 +86,6 @@ dependencies {
     implementation (libs.moshi.kotlin)
     implementation (libs.androidx.foundation)
     implementation (libs.material3)
-
+    implementation (libs.androidx.work.runtime.ktx)
 
 }
