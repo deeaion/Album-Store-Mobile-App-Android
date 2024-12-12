@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.albumstore.core.data.UserPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class UserPreferencesRepository(private val dataStore: DataStore<Preferences>) {
@@ -67,6 +68,12 @@ class UserPreferencesRepository(private val dataStore: DataStore<Preferences>) {
             roles = preferences[PreferencesKeys.roles] ?: "",
             userId = preferences[PreferencesKeys.userId] ?: ""
         )
+    }
+    // Add a method to get user preferences
+    suspend fun getUserPreferences(): UserPreferences {
+        return userPreferencesStream
+            .map { it }
+            .first()
     }
 
     companion object {

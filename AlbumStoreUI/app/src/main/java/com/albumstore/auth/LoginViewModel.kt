@@ -66,13 +66,27 @@ class LoginViewModel(
             } else {
                 val errorMessage = result.exceptionOrNull()?.message ?: "Unknown error"
                 Log.e(TAG, "Login failed: $errorMessage")
-                uiState = uiState.copy(
-                    isAuthenticating = false,
-                    authenticationError = result.exceptionOrNull()
-                )
+
+                // Check if token already exists
+                val savedPreferences = userPrefRepository.getUserPreferences()
+                if (savedPreferences.token.isNotEmpty()) {
+                    Log.d(TAG, "Found saved token. Proceeding with stored token.")
+                    uiState = uiState.copy(
+                        isAuthenticating = false,
+                        authenticationCompleted = true,
+                        token = savedPreferences.token
+                    )
+                } else {
+                    Log.e(TAG, "No saved token found.")
+                    uiState = uiState.copy(
+                        isAuthenticating = false,
+                        authenticationError = result.exceptionOrNull()
+                    )
+                }
             }
         }
     }
+
 
     companion object {
         private const val TAG = "LoginViewModel"

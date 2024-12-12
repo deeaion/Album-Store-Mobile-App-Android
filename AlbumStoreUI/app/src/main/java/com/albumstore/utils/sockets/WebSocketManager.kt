@@ -23,7 +23,7 @@ class WebSocketManager(
     private val eventChannel = Channel<ProductEvent>(Channel.BUFFERED)
     val socketEventsFlow = eventChannel.receiveAsFlow()
 
-    private val maxReconnectAttempts = 2
+    private val maxReconnectAttempts = 10
     private var reconnectAttempts = 0
     private val reconnectDelay = 6000L // 5 seconds
 
@@ -73,7 +73,7 @@ class WebSocketManager(
         if (reconnectAttempts >= maxReconnectAttempts) {
             Log.w(TAG, "Max reconnect attempts reached. Waiting before retrying...")
             coroutineScope.launch {
-                delay(60000) // Wait 60 seconds before resetting attempts
+                delay(1000) // Wait 60 seconds before resetting attempts
                 reconnectAttempts = 0
                 startConnection(coroutineScope, userId)
             }

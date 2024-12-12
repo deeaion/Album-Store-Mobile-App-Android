@@ -5,6 +5,7 @@ import com.albumstore.core.data.remote.Api
 import com.albumstore.todo.data.local.ProductDao
 import com.albumstore.todo.data.remote.FavoriteRequest
 import com.albumstore.todo.data.remote.GetAllProductsFilter
+import com.albumstore.todo.data.remote.GetAllProductsResponse
 import com.albumstore.todo.data.remote.ProductService
 import com.albumstore.todo.data.remote.ProductWsClient
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +16,7 @@ import com.albumstore.todo.data.remote.ProductEvent
 import com.albumstore.todo.data.remote.ProductRequest
 import com.albumstore.todo.data.remote.toQueryMap
 import com.squareup.moshi.Moshi
+import kotlinx.coroutines.flow.first
 
 class ProductRepository(
     private val productService: ProductService,
@@ -29,10 +31,19 @@ class ProductRepository(
     private fun getBearerToken() = "Bearer ${Api.tokenInterceptor.token}"
 
     suspend fun fetchProducts(filter: GetAllProductsFilter): List<Product> {
-        val response = productService.getProducts(getBearerToken(), filter.toQueryMap())
+        var response: GetAllProductsResponse
+//        try {
+//            response=productService.getProducts(getBearerToken(), filter.toQueryMap())
+//        }
+//        catch (e: Exception) {
+//           return productDao.getAll().first()
+//        }
+        response=productService.getProducts(getBearerToken(), filter.toQueryMap())
+
         response.records.forEach { product ->
             Log.d("ProductRepository", "Product: $product") // Debug log for each product
         }
+
         productDao.deleteAll()
         productDao.insertAll(response.records)
         return response.records

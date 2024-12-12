@@ -1,5 +1,6 @@
 package com.albumstore.utils.conectivitymanager
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.ConnectivityManager.NetworkCallback
@@ -49,6 +50,7 @@ class ConnectivityManagerNetworkMonitor(val context: Context) {
         }
     }.conflate()
 
+    @SuppressLint("ObsoleteSdkInt")
     @Suppress("DEPRECATION")
     private fun ConnectivityManager?.isCurrentlyConnected(): Boolean {
         return this?.let {
