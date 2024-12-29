@@ -9,19 +9,22 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.albumstore.todo.data.band.Band
 import com.albumstore.todo.data.local.BandDao
+import com.albumstore.todo.data.local.CollectionItemDao
 import com.albumstore.todo.data.local.PendingTaskDao
 import com.albumstore.todo.data.product.Product
 import com.albumstore.todo.data.local.ProductDao
 import com.albumstore.todo.data.tasks.PendingTask
 import com.albumstore.utils.database.Converters
+import com.albumstore.todo.data.collection.CollectionItem
 
-@Database(entities = [Product::class , Band::class, PendingTask::class], version = 5, exportSchema = false)
+@Database(entities = [Product::class , Band::class, PendingTask::class,CollectionItem::class], version = 7, exportSchema = false)
 
 @TypeConverters(Converters::class) // Add the Converters class here
 abstract class MyAppDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao // DAO = Data Access Object
     abstract fun bandDao(): BandDao // DAO = Data Access Object
     abstract fun taskDao(): PendingTaskDao // DAO = Data Access Object
+    abstract fun collectionItemDao(): CollectionItemDao // DAO = Data Access Object
     companion object {
         @Volatile
         private var INSTANCE: MyAppDatabase? = null

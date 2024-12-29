@@ -12,10 +12,12 @@ import com.albumstore.core.TAG
 import com.albumstore.core.data.remote.Api
 import com.albumstore.core.data.remote.UserPreferencesRepository
 import com.albumstore.todo.data.band.BandRepository
+import com.albumstore.todo.data.collection.CollectionItemRepository
 import com.albumstore.todo.data.product.ProductRepository
 import com.albumstore.todo.data.remote.ProductService
 import com.albumstore.todo.data.remote.ProductWsClient
 import com.albumstore.todo.data.remote.band.BandService
+import com.albumstore.todo.data.remote.collection.CollectionItemService
 import com.albumstore.todo.data.tasks.TaskRepository
 import com.albumstore.utils.conectivitymanager.ConnectivityManagerNetworkMonitor
 import com.albumstore.utils.sockets.WebSocketManager
@@ -57,7 +59,7 @@ class AppContainer(val context: Context) {
     }
     //conectivity manager
     val connectivityManager = ConnectivityManagerNetworkMonitor(context)
-
+    val collectionItemService : CollectionItemService= Api.retrofit.create(CollectionItemService::class.java)
 
     // Lazy initialization of the database instance
     private val database: MyAppDatabase by lazy { MyAppDatabase.getDatabase(context) }
@@ -86,6 +88,10 @@ class AppContainer(val context: Context) {
 
     val taskRepository: TaskRepository by lazy {
         TaskRepository(context,database.taskDao(), productService)
+    }
+
+    val collectionRepository: CollectionItemRepository by lazy {
+        CollectionItemRepository( collectionItemService, database.collectionItemDao())
     }
     fun scheduleProductReminderWork(context: Context) {
         val workRequest = PeriodicWorkRequestBuilder<ProductSyncWorker>(

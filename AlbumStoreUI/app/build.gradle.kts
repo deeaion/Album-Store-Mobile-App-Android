@@ -3,18 +3,19 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
-
+    id("kotlin-parcelize")
 
 }
 
 android {
     namespace = "com.albumstore"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.albumstore"
         minSdk = 24
-        targetSdk = 34
+        //noinspection EditedTargetSdkVersion
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -69,6 +70,11 @@ dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.play.services.nearby)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.rendering)
+    implementation(libs.sceneform.ux)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
     // Data store
@@ -87,5 +93,28 @@ dependencies {
     implementation (libs.androidx.foundation)
     implementation (libs.material3)
     implementation (libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.maps.compose)
+    implementation(libs.accompanist.permissions)
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.view)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.coil.compose)
+    testImplementation(libs.junit)
+
+    implementation("androidx.camera:camera-core:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.0")
+    implementation("androidx.camera:camera-view:1.3.0")
+    implementation("androidx.camera:camera-extensions:1.3.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // Replace with the latest version
+    //parcelize
+//    implementation("org.jetbrains.kotlinx:kotlinx-parcelize:1.5.2")
+    // Accompanist Permissions
+    implementation("com.google.accompanist:accompanist-permissions:0.30.1")
+    implementation("org.jetbrains.kotlin:kotlin-parcelize-runtime:1.9.10")
+    implementation ("androidx.constraintlayout:constraintlayout:2.1.4") // Use the latest version
+    implementation ("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
+    implementation("io.coil-kt:coil-compose:2.2.2")
+//    implementation("androidx.paging:paging-compose:1.0.0")
 
 }
